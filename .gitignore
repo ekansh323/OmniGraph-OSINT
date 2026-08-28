@@ -1,0 +1,136 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+venv/
+env/
+ENV/
+.venv
+
+# FastAPI / uvicorn
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+
+# Node / React / Vite
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+dist/
+dist-ssr/
+*.local
+.vite/
+
+# Environment files (CRITICAL - never commit secrets)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+*.crt
+secrets.json
+credentials.json
+
+# AWS
+.aws/
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+pgdata/
+postgres-data/
+*.sql.backup
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# OS
+Thumbs.db
+.AppleDouble
+.LSOverride
+
+# Testing
+.coverage
+coverage/
+*.cover
+.hypothesis/
+.pytest_cache/
+test-results/
+playwright-report/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+
+# Evidence files (local development only)
+evidence/
+uploads/
+synthetic-evidence/*.pdf
+synthetic-evidence/*.png
+synthetic-evidence/*.jpg
+synthetic-evidence/*.jpeg
+synthetic-evidence/*.wav
+synthetic-evidence/*.mp3
+
+# Extracted/processed data (generated)
+extracted/
+processed/
+
+# Docker
+docker-compose.override.yml
+
+# MacOS
+.DS_Store
+
+# CloudWatch local simulation
+cloudwatch-logs/
+
+# Local PostgreSQL dumps
+*.dump
+*.backup

@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:14
+    container_name: omnigraph-postgres
+    environment:
+      POSTGRES_DB: omnigraph_osint
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: development
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/seed-data.sql:/docker-entrypoint-initdb.d/02-seed-data.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d omnigraph_osint"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - omnigraph-network
+
+  # Optional: LocalStack for local AWS service emulation (S3, SQS)
+  # Uncomment to test S3/SQS integration without real AWS
+  # localstack:
+  #   image: localstack/localstack:latest
+  #   container_name: omnigraph-localstack
+  #   environment:
+  #     SERVICES: s3,sqs
+  #     AWS_DEFAULT_REGION: us-east-1
+  #     EDGE_PORT: 4566
+  #     DATA_DIR: /var/lib/localstack/data
+  #   ports:
+  #     - "4566:4566"
+  #   volumes:
+  #     - localstack-data:/var/lib/localstack
+  #   networks:
+  #     - omnigraph-network
+
+volumes:
+  postgres-data:
+    driver: local
+  # localstack-data:
+  #   driver: local
+
+networks:
+  omnigraph-network:
+    driver: bridge
