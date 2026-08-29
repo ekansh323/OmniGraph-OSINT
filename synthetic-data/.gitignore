@@ -1,0 +1,7 @@
+# Generated evidence files (do not commit)
+evidence/
+prepared-extractions/
+
+# Python artifacts
+__pycache__/
+*.pyc

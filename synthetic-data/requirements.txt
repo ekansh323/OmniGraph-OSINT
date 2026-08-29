@@ -1,0 +1,8 @@
+# Core dependencies for synthetic data generation
+faker==20.1.0           # Realistic fake data generation
+reportlab==4.0.7        # PDF generation
+Pillow==10.1.0          # Image manipulation
+gTTS==2.4.0             # Google Text-to-Speech
+pyttsx3==2.90           # Offline TTS (backup)
+pandas==2.1.3           # CSV generation and manipulation
+pydub==0.25.1           # Audio file manipulation

@@ -45,10 +45,12 @@ See **[ARCHITECTURE.md](./ARCHITECTURE.md)** for complete schema with indexes an
 
 ## Quick Start
 
-1. **Start services**: `docker-compose up -d` (PostgreSQL)
-2. **Backend**: `cd backend && uvicorn app.main:app --reload` (port 8000)
-3. **Frontend**: `cd frontend && npm run dev` (port 5173)
-4. **Generate synthetic data**: `cd synthetic-data && python generator.py`
+1. **Generate synthetic data**: `cd synthetic-data && python generator.py`
+2. **Start services**: `docker-compose up -d` (PostgreSQL)
+3. **Backend**: `cd backend && uvicorn app.main:app --reload` (port 8000)
+4. **Frontend**: `cd frontend && npm run dev` (port 5173)
+
+**Synthetic Data**: Located in `synthetic-data/` (generate with `python generator.py`). Evidence files and extraction JSONs are git-ignored.
 
 See **[README.md](./README.md)** for complete setup instructions.
 

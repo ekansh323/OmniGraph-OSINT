@@ -118,6 +118,10 @@ synthetic-evidence/*.jpeg
 synthetic-evidence/*.wav
 synthetic-evidence/*.mp3
 
+# Synthetic data (generated, do not commit)
+synthetic-data/evidence/
+synthetic-data/prepared-extractions/
+
 # Extracted/processed data (generated)
 extracted/
 processed/
