@@ -13,6 +13,9 @@ from datetime import datetime, timedelta
 import random
 
 
+RANDOM_SEED = 20260828
+
+
 def generate_techventures_transactions(output_dir: str, scenario):
     """Generate transaction CSV for TechVentures Q2 2026 with patterns"""
     filename = os.path.join(output_dir, "transactions_techventures_2026_q2.csv")
@@ -23,7 +26,7 @@ def generate_techventures_transactions(output_dir: str, scenario):
     transactions.append({
         'date': '2026-02-15',
         'sender_account': '***1234',
-        'receiver_account': '***5678',
+        'receiver_account': '***9010',
         'amount': 300000.00,
         'currency': 'USD',
         'description': 'Investment capital'
@@ -31,7 +34,7 @@ def generate_techventures_transactions(output_dir: str, scenario):
 
     transactions.append({
         'date': '2026-03-10',
-        'sender_account': '***5678',
+        'sender_account': '***9010',
         'receiver_account': '***9012',
         'amount': 300000.00,
         'currency': 'USD',
@@ -97,7 +100,7 @@ def generate_techventures_transactions(output_dir: str, scenario):
 
     # High-value transactions
     high_value_txns = [
-        ('2026-03-15', '***5678', '***9012', 250000.00, 'Large consulting payment'),
+        ('2026-03-15', '***9010', '***9012', 250000.00, 'Large consulting payment'),
         ('2026-04-18', '***9012', '***1357', 200000.00, 'Advisory services'),
         ('2026-06-10', '***1357', '***2468', 180000.00, 'Service fees'),
         ('2026-07-01', '***2468', '***7777', 175000.00, 'Offshore transfer'),
@@ -122,7 +125,7 @@ def generate_techventures_transactions(output_dir: str, scenario):
     while len(transactions) < 80:
         transactions.append({
             'date': current_date.strftime('%Y-%m-%d'),
-            'sender_account': '***5678',
+        'sender_account': '***9010',
             'receiver_account': random.choice(normal_accounts),
             'amount': round(random.uniform(500, 5000), 2),
             'currency': 'USD',
@@ -220,7 +223,7 @@ def generate_pharma_transactions(output_dir: str, scenario):
         transactions.append({
             'date': date,
             'from_account': '***5555',
-            'to_account': '***7777',
+            'to_account': '***7788',
             'amount': base_amount,
             'currency': 'USD',
             'memo': 'Medical services billing'
@@ -249,6 +252,7 @@ def generate_pharma_transactions(output_dir: str, scenario):
 
 def generate_all_transactions(scenarios: dict):
     """Generate all CSV transaction files"""
+    random.seed(RANDOM_SEED)
     output_dir = "evidence/csv"
     os.makedirs(output_dir, exist_ok=True)
 

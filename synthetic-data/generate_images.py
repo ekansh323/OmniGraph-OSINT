@@ -173,7 +173,7 @@ def generate_whiteboard(output_dir: str, scenario):
     # Draw boxes for entities
     boxes = [
         (300, 250, 600, 350, "Chen Personal\n***1234"),
-        (900, 250, 1200, 350, "TechVentures LLC\n***5678"),
+        (900, 250, 1200, 350, "TechVentures LLC\n***9010"),
         (300, 550, 600, 650, "CryptoHoldings\n***9012"),
         (900, 550, 1200, 650, "OffshoreConsult\nCrypto: 0x7a8b..."),
         (1450, 550, 1750, 650, "Pacific Trust\n***2468"),
@@ -268,7 +268,7 @@ def generate_check(output_dir: str, scenario):
     # Account info
     y = 500
     draw.text((50, y), "TechVentures LLC", font=font_medium, fill='black')
-    draw.text((50, y+30), "Account: ***5678", font=font_small, fill='black')
+    draw.text((50, y+30), "Account: ***9010", font=font_small, fill='black')
 
     # Signature line
     draw.line([700, 520, 1100, 520], fill='black', width=2)

@@ -27,6 +27,8 @@ This document breaks down the project implementation into actionable milestones.
 
 ## Milestone 1: Synthetic Data Generation
 
+**Status: Complete (validated locally on 2026-08-30).**
+
 ### Objective
 Create a complete set of synthetic evidence files and prepared extraction results for demonstration purposes.
 
@@ -66,7 +68,7 @@ Create a complete set of synthetic evidence files and prepared extraction result
          {"source": "entity_1", "target": "entity_2", "type": "CALLS", "confidence": 0.88}
        ],
        "transactions": [
-         {"sender": "acct_123", "receiver": "acct_456", "amount": 5000, "currency": "USD"}
+        {"sender_entity_id": "acct_123", "receiver_entity_id": "acct_456", "amount": 5000, "currency": "USD", "timestamp": "2026-01-01T00:00:00Z", "description": "Synthetic transfer"}
        ]
      }
      ```
@@ -83,12 +85,12 @@ Create a complete set of synthetic evidence files and prepared extraction result
 None
 
 ### Definition of Done
-- [ ] At least 15 synthetic evidence files created (PDFs, images, audio, CSV)
-- [ ] Each file has corresponding prepared extraction JSON
-- [ ] Files stored in `synthetic-data/evidence/` directory
-- [ ] Extraction JSONs stored in `synthetic-data/prepared-extractions/`
-- [ ] Generator scripts documented and executable
-- [ ] README in `synthetic-data/` explaining the scenario and how to regenerate
+- [x] At least 15 synthetic evidence files created (19 PDFs, images, audio, and CSV files)
+- [x] Each file has corresponding prepared extraction JSON
+- [x] Files stored in `synthetic-data/evidence/` directory
+- [x] Extraction JSONs stored in `synthetic-data/prepared-extractions/`
+- [x] Generator scripts documented and executable
+- [x] README in `synthetic-data/` explaining the scenario and how to regenerate
 
 ### Testing Requirements
 - Run generator scripts and verify output
@@ -107,6 +109,8 @@ None
 
 ## Milestone 2: Database Schema & Migrations
 
+**Status: Schema, migration, seed script, and tests are implemented. Live PostgreSQL verification is pending a running Docker Engine.**
+
 ### Objective
 Implement the PostgreSQL database schema with proper constraints, indexes, and migration support.
 
@@ -122,12 +126,12 @@ Implement the PostgreSQL database schema with proper constraints, indexes, and m
 
 2. **Set Up Migration Framework**
    - Install Alembic for Python migrations
-   - Initialize Alembic in `backend/`
-   - Create migration: `001_initial_schema.py`
+   - Initialize Alembic in `database/`
+   - Create migration: `20260830_0001_initial_schema.py`
    - Test upgrade/downgrade
 
 3. **Create Seed Data Script**
-   - `database/seed-data.sql`: Insert test case data
+   - `database/seed.py`: Insert deterministic test case data
    - Include 1-2 sample cases with basic entities
    - Do NOT load full synthetic evidence yet (that's milestone 5)
 
@@ -145,9 +149,9 @@ Implement the PostgreSQL database schema with proper constraints, indexes, and m
 None
 
 ### Definition of Done
-- [ ] `database/schema.sql` creates all tables successfully
-- [ ] Alembic migrations set up and tested
-- [ ] Seed data loads without errors
+- [x] Initial Alembic migration renders valid PostgreSQL DDL for all core tables
+- [x] Alembic migration framework is set up and static SQL generation is tested
+- [ ] Seed data loads into a live local PostgreSQL instance
 - [ ] SQLAlchemy models created for all tables
 - [ ] Database connection tested from backend
 - [ ] All constraints and indexes verified with `\d tablename` in psql
@@ -166,7 +170,7 @@ None
 ### Documentation
 - Document schema in ARCHITECTURE.md (already done)
 - Add migration workflow to docs/DEPLOYMENT.md
-- Comment complex queries in schema.sql
+- Comment complex queries in Alembic migrations or query modules
 
 ---
 
@@ -872,12 +876,11 @@ Migrate database from local PostgreSQL to Amazon RDS.
 
 2. **Run Schema Migration**
    - Connect to RDS from local machine (via bastion or temporary public access)
-   - Run `database/schema.sql` to create tables
-   - Or use Alembic to apply migrations
+   - Run Alembic to apply the versioned migrations
    - Verify all tables created with `\dt`
 
 3. **Load Synthetic Data**
-   - Run `database/seed-data.sql`
+   - Run `database/seed.py` for the small M2 seed set
    - Or use Python script to load from synthetic-data/
    - Verify data loaded correctly
 

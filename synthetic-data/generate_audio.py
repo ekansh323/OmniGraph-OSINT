@@ -7,61 +7,85 @@ Generates 4 audio evidence files (WAV format):
 3. Meeting recording at TechVentures
 4. Phone call between Morgan and Parker
 
-Audio is synthesized with gTTS (MP3) then converted to WAV using ffmpeg.
-Uses gTTS for realistic speech synthesis (requires internet).
+Audio is synthesized locally with Windows text-to-speech. gTTS is only a
+fallback when an offline voice is unavailable, so the generator works without
+an internet connection.
 """
 
 import os
+import shutil
 import subprocess
 import sys
 
 
+def _get_ffmpeg_executable() -> str:
+    """Return a locally available FFmpeg binary without requiring a global install."""
+    system_ffmpeg = shutil.which("ffmpeg")
+    if system_ffmpeg:
+        return system_ffmpeg
+
+    try:
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except ImportError as error:
+        raise RuntimeError(
+            "FFmpeg is required for audio generation. Install imageio-ffmpeg or add ffmpeg to PATH."
+        ) from error
+
+
+def _synthesize_with_pyttsx3(text: str, output_path: str) -> bool:
+    """Use Windows/offline text-to-speech as the primary synthesis path."""
+    try:
+        import pyttsx3
+        engine = pyttsx3.init()
+        engine.save_to_file(text, output_path)
+        engine.runAndWait()
+        return os.path.exists(output_path) and os.path.getsize(output_path) > 0
+    except Exception as error:
+        print(f"    Offline TTS fallback failed ({error})")
+        return False
+
+
 def text_to_wav(text: str, output_path: str, lang='en', slow=False):
     """
-    Convert text to WAV audio file using gTTS + ffmpeg.
-    Falls back to a silent WAV placeholder if synthesis fails.
+    Convert text to a non-silent WAV audio file.
+
+    The offline voice is deliberately preferred: evidence generation should be
+    reproducible in a classroom or lab with no internet access. If Windows TTS
+    is unavailable, gTTS plus ffmpeg provides a secondary path.
     """
     temp_mp3 = output_path.replace('.wav', '_temp.mp3')
+
+    if _synthesize_with_pyttsx3(text, output_path):
+        return
+    if os.path.exists(output_path):
+        os.remove(output_path)
 
     try:
         from gtts import gTTS
         tts = gTTS(text=text, lang=lang, slow=slow)
         tts.save(temp_mp3)
-    except Exception as e:
-        print(f"    ⚠ TTS synthesis failed ({e}), generating silent placeholder")
-        _write_silent_wav(output_path, duration_seconds=5)
-        return
+    except Exception as error:
+        print(f"    ⚠ gTTS fallback failed ({error})")
+        if os.path.exists(temp_mp3):
+            os.remove(temp_mp3)
+        if os.path.exists(output_path):
+            os.remove(output_path)
+        raise RuntimeError("Both gTTS and offline TTS failed; no audio file was generated.")
 
     # Convert MP3 to WAV using ffmpeg
     try:
         result = subprocess.run(
-            ['ffmpeg', '-y', '-i', temp_mp3, '-ac', '1', '-ar', '22050', output_path],
+            [_get_ffmpeg_executable(), '-y', '-i', temp_mp3, '-ac', '1', '-ar', '22050', output_path],
             capture_output=True, text=True
         )
         if result.returncode != 0:
             raise RuntimeError(result.stderr[-500:])
-    except Exception as e:
-        print(f"    ⚠ ffmpeg conversion failed ({e}), writing silent placeholder")
-        _write_silent_wav(output_path, duration_seconds=5)
+    except Exception as error:
+        raise RuntimeError(f"Audio conversion failed: {error}") from error
     finally:
         if os.path.exists(temp_mp3):
             os.remove(temp_mp3)
-
-
-def _write_silent_wav(output_path: str, duration_seconds: int = 5):
-    """Write a silent WAV file (stdlib only) as a fallback placeholder."""
-    import wave
-    import struct
-    sample_rate = 22050
-    with wave.open(output_path, 'w') as wav:
-        wav.setnchannels(1)
-        wav.setsampwidth(2)  # 16-bit
-        wav.setframerate(sample_rate)
-        # Very quiet tone modulated by a low amplitude sine (below speech, inaudible-ish)
-        # Keep it effectively silent (0 amplitude) to stay < 5MB
-        frames = b'\x00\x00' * (sample_rate * duration_seconds)
-        wav.writeframes(frames)
-
 
 def generate_phone_call_chen_rodriguez(output_dir: str, scenario):
     """Generate phone call between Chen and Rodriguez discussing fund movement"""

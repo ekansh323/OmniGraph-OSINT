@@ -5,15 +5,20 @@ Generates 19 JSON files with prepared extraction results for each evidence file.
 Implements cross-file entity consistency using deterministic entity IDs from scenarios.
 """
 
-import os
+import hashlib
 import json
+import os
 import uuid
+import csv
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, List
 
 
 # Deterministic UUID generation
 EVIDENCE_NAMESPACE = uuid.UUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8')
+DATA_DIRECTORY = Path(__file__).resolve().parent
+EXTRACTION_SCHEMA_VERSION = "1.0"
 
 
 def generate_evidence_id(evidence_filename: str) -> str:
@@ -34,9 +39,46 @@ def create_base_extraction(evidence_filename: str, extraction_type: str, file_si
         "transactions": [],
         "metadata": {
             "file_size_bytes": file_size,
+            "sha256": "",
+            "schema_version": EXTRACTION_SCHEMA_VERSION,
             "processing_notes": "Prepared extraction for demonstration"
         }
     }
+
+
+def create_transaction(
+    sender_entity_id: str,
+    receiver_entity_id: str,
+    amount: float,
+    currency: str,
+    timestamp: str,
+    description: str,
+) -> dict:
+    """Create a transaction with unambiguous canonical entity references."""
+    return {
+        "sender_entity_id": sender_entity_id,
+        "receiver_entity_id": receiver_entity_id,
+        "amount": amount,
+        "currency": currency,
+        "timestamp": timestamp,
+        "description": description,
+    }
+
+
+def _find_evidence_path(evidence_filename: str) -> Path:
+    for evidence_type in ("pdfs", "images", "audio", "csv"):
+        candidate = DATA_DIRECTORY / "evidence" / evidence_type / evidence_filename
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(f"Evidence file not found for extraction: {evidence_filename}")
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 # PDF Extraction JSONs
@@ -136,14 +178,10 @@ Notes:
     ]
 
     extraction["transactions"] = [
-        {
-            "sender": "CryptoHoldings Inc",
-            "receiver": "TechVentures LLC",
-            "amount": 250000.00,
-            "currency": "USD",
-            "timestamp": "2026-03-15T00:00:00Z",
-            "description": "Consulting Services revenue"
-        }
+        create_transaction(
+            "org_cryptoholdings_001", "org_techventures_001", 250000.00,
+            "USD", "2026-03-15T00:00:00Z", "Consulting Services revenue"
+        )
     ]
 
     extraction["metadata"]["page_count"] = 3
@@ -234,14 +272,10 @@ Date: March 1, 2026"""
     ]
 
     extraction["transactions"] = [
-        {
-            "sender": "CryptoHoldings Inc",
-            "receiver": "OffshoreConsult Ltd",
-            "amount": 280000.00,
-            "currency": "USD",
-            "timestamp": "2026-03-01T00:00:00Z",
-            "description": "Service agreement payment"
-        }
+        create_transaction(
+            "org_cryptoholdings_001", "org_offshoreconsult_001", 280000.00,
+            "USD", "2026-03-01T00:00:00Z", "Service agreement payment"
+        )
     ]
 
     extraction["metadata"]["page_count"] = 4
@@ -337,10 +371,10 @@ Selected Transactions:
     ]
 
     extraction["transactions"] = [
-        {"sender": "***1234", "receiver": "S. Rodriguez", "amount": 9500.00, "currency": "USD", "timestamp": "2026-06-03T00:00:00Z", "description": "Transfer"},
-        {"sender": "External", "receiver": "***1234", "amount": 50000.00, "currency": "USD", "timestamp": "2026-06-12T00:00:00Z", "description": "Crypto Conversion"},
-        {"sender": "External", "receiver": "***1234", "amount": 260000.00, "currency": "USD", "timestamp": "2026-06-15T00:00:00Z", "description": "Large Transfer In"},
-        {"sender": "***1234", "receiver": "External", "amount": 180000.00, "currency": "USD", "timestamp": "2026-06-16T00:00:00Z", "description": "Transfer Out"}
+        create_transaction("account_chen_personal_001", "account_rodriguez_personal_001", 9500.00, "USD", "2026-06-03T00:00:00Z", "Transfer"),
+        create_transaction("account_chen_crypto_001", "account_chen_personal_001", 50000.00, "USD", "2026-06-12T00:00:00Z", "Crypto Conversion"),
+        create_transaction("account_cryptoholdings_001", "account_chen_personal_001", 260000.00, "USD", "2026-06-15T00:00:00Z", "Large Transfer In"),
+        create_transaction("account_chen_personal_001", "account_offshoreconsult_001", 180000.00, "USD", "2026-06-16T00:00:00Z", "Transfer Out")
     ]
 
     extraction["metadata"]["page_count"] = 2
@@ -460,14 +494,10 @@ Total Due: $79,130.75"""
     ]
 
     extraction["transactions"] = [
-        {
-            "sender": "Morgan Medical Clinic",
-            "receiver": "PharmaCorp Distributors",
-            "amount": 79130.75,
-            "currency": "USD",
-            "timestamp": "2026-05-15T00:00:00Z",
-            "description": "Invoice 001234 payment"
-        }
+        create_transaction(
+            "org_morganmedical_001", "org_pharmacorp_001", 79130.75,
+            "USD", "2026-05-15T00:00:00Z", "Invoice 001234 payment"
+        )
     ]
 
     extraction["metadata"]["page_count"] = 1
@@ -589,7 +619,7 @@ def extract_receipt(scenarios: dict) -> dict:
 
 def extract_whiteboard(scenarios: dict) -> dict:
     extraction = create_base_extraction("whiteboard_meeting_notes.jpg", "ocr", 1987654)
-    extraction["raw_text"] = "Money Flow - Q2 2026\nChen Personal ***1234\nTechVentures LLC ***5678\nCryptoHoldings ***9012\nOffshoreConsult Crypto: 0x7a8b...\nPacific Trust ***2468\nTotal Cycle: $850K"
+    extraction["raw_text"] = "Money Flow - Q2 2026\nChen Personal ***1234\nTechVentures LLC ***9010\nCryptoHoldings ***9012\nOffshoreConsult Crypto: 0x7a8b...\nPacific Trust ***2468\nTotal Cycle: $850K"
     extraction["entities"] = [
         {"entity_id": "person_chen_001", "type": "PERSON", "name": "Chen", "confidence": 0.85, "attributes": {}},
         {"entity_id": "org_techventures_001", "type": "ORGANIZATION", "name": "TechVentures LLC", "confidence": 0.92, "attributes": {}},
@@ -616,7 +646,10 @@ def extract_check(scenarios: dict) -> dict:
         {"source_entity_id": "org_techventures_001", "target_entity_id": "org_cryptoholdings_001", "type": "TRANSFERRED_FUNDS", "confidence": 0.97, "context": "Check payment for consulting services"}
     ]
     extraction["transactions"] = [
-        {"sender": "TechVentures LLC", "receiver": "CryptoHoldings Inc", "amount": 250000.00, "currency": "USD", "timestamp": "2026-03-15T00:00:00Z", "description": "Consulting Services - Q1 2026"}
+        create_transaction(
+            "org_techventures_001", "org_cryptoholdings_001", 250000.00,
+            "USD", "2026-03-15T00:00:00Z", "Consulting Services - Q1 2026"
+        )
     ]
     extraction["metadata"]["mime_type"] = "image/png"
     return extraction
@@ -724,30 +757,26 @@ def extract_phone_call_morgan_parker(scenarios: dict) -> dict:
 
 def extract_transactions_csv(scenarios: dict) -> dict:
     extraction = create_base_extraction("transactions_techventures_2026_q2.csv", "csv_parse", 45678)
-    extraction["raw_text"] = "date,sender_account,receiver_account,amount,currency,description\n2026-02-15,***1234,***5678,300000.00,USD,Investment capital\n..."
+    csv_path = DATA_DIRECTORY / "evidence" / "csv" / extraction["evidence_filename"]
+    with csv_path.open("r", encoding="utf-8") as source:
+        rows = list(csv.DictReader(source))
 
-    # Include all account entities from scenarios
+    scenario = scenarios["scenario_1"]
+    accounts_by_number = {account.account_number: account for account in scenario.accounts}
+    extraction["raw_text"] = "\n".join(
+        ["date,sender_account,receiver_account,amount,currency,description"]
+        + [",".join(row.values()) for row in rows[:3]]
+        + ["..."]
+    )
     extraction["entities"] = [
-        {"entity_id": "account_chen_personal_001", "type": "BANK_ACCOUNT", "name": "Account ***1234", "confidence": 0.97, "attributes": {"owner": "Chen"}},
-        {"entity_id": "account_rodriguez_personal_001", "type": "BANK_ACCOUNT", "name": "Account ***2345", "confidence": 0.97, "attributes": {"owner": "Rodriguez"}},
-        {"entity_id": "account_kim_personal_001", "type": "BANK_ACCOUNT", "name": "Account ***3456", "confidence": 0.97, "attributes": {"owner": "Kim"}},
-        {"entity_id": "account_white_personal_001", "type": "BANK_ACCOUNT", "name": "Account ***4567", "confidence": 0.97, "attributes": {"owner": "White"}},
-        {"entity_id": "account_martinez_personal_001", "type": "BANK_ACCOUNT", "name": "Account ***5678", "confidence": 0.97, "attributes": {"owner": "Martinez"}},
-        {"entity_id": "account_thompson_personal_001", "type": "BANK_ACCOUNT", "name": "Account ***6789", "confidence": 0.97, "attributes": {"owner": "Thompson"}},
-        {"entity_id": "account_brown_personal_001", "type": "BANK_ACCOUNT", "name": "Account ***7890", "confidence": 0.97, "attributes": {"owner": "Brown"}},
-        {"entity_id": "account_davis_personal_001", "type": "BANK_ACCOUNT", "name": "Account ***8901", "confidence": 0.97, "attributes": {"owner": "Davis"}},
-        {"entity_id": "account_techventures_001", "type": "BANK_ACCOUNT", "name": "Account ***5678", "confidence": 0.97, "attributes": {"owner": "TechVentures"}},
-        {"entity_id": "account_cryptoholdings_001", "type": "BANK_ACCOUNT", "name": "Account ***9012", "confidence": 0.97, "attributes": {"owner": "CryptoHoldings"}},
-        {"entity_id": "account_offshoreconsult_001", "type": "BANK_ACCOUNT", "name": "Account ***1357", "confidence": 0.97, "attributes": {"owner": "OffshoreConsult"}},
-        {"entity_id": "account_pacifictrust_001", "type": "BANK_ACCOUNT", "name": "Account ***2468", "confidence": 0.97, "attributes": {"owner": "PacificTrust"}},
-        {"entity_id": "account_chen_offshore_001", "type": "BANK_ACCOUNT", "name": "Account ***7777", "confidence": 0.96, "attributes": {"owner": "Chen", "location": "offshore"}},
-        {"entity_id": "account_chen_crypto_001", "type": "CRYPTO_WALLET", "name": "Wallet 0x3c4d...", "confidence": 0.95, "attributes": {"owner": "Chen"}},
-        {"entity_id": "account_rodriguez_crypto_001", "type": "CRYPTO_WALLET", "name": "Wallet 0x5e8b...", "confidence": 0.95, "attributes": {"owner": "Rodriguez"}},
-        {"entity_id": "account_brown_crypto_001", "type": "CRYPTO_WALLET", "name": "Wallet 0x7a1c...", "confidence": 0.95, "attributes": {"owner": "Brown"}},
-        {"entity_id": "account_kim_crypto_001", "type": "CRYPTO_WALLET", "name": "Wallet 0x2d9e...", "confidence": 0.95, "attributes": {"owner": "Kim"}},
-        {"entity_id": "account_cryptoholdings_crypto_001", "type": "CRYPTO_WALLET", "name": "Wallet 0x7a8b...", "confidence": 0.95, "attributes": {"owner": "OffshoreConsult"}},
-        {"entity_id": "account_techventures_crypto_001", "type": "CRYPTO_WALLET", "name": "Wallet 0x1b3c...", "confidence": 0.95, "attributes": {"owner": "TechVentures"}},
-        {"entity_id": "account_pacifictrust_crypto_001", "type": "CRYPTO_WALLET", "name": "Wallet 0x4f7d...", "confidence": 0.95, "attributes": {"owner": "PacificTrust"}},
+        {
+            "entity_id": account.id,
+            "type": "CRYPTO_WALLET" if account.account_type == "crypto" else "BANK_ACCOUNT",
+            "name": f"{'Wallet' if account.account_type == 'crypto' else 'Account'} {account.account_number}",
+            "confidence": 0.97,
+            "attributes": {"owner_entity_id": account.owner_entity_id, "bank_name": account.bank_name},
+        }
+        for account in scenario.accounts
     ]
 
     extraction["relationships"] = [
@@ -755,47 +784,19 @@ def extract_transactions_csv(scenarios: dict) -> dict:
         {"source_entity_id": "account_chen_personal_001", "target_entity_id": "account_rodriguez_personal_001", "type": "TRANSFERRED_FUNDS", "confidence": 0.98, "context": "15 repeated transfers"}
     ]
 
-    # Include cycle, repeated, high-value, and structuring transactions
-    transactions = [
-        # Cycle
-        {"sender": "***1234", "receiver": "***5678", "amount": 300000.00, "currency": "USD", "timestamp": "2026-02-15T00:00:00Z", "description": "Investment capital"},
-        {"sender": "***5678", "receiver": "***9012", "amount": 300000.00, "currency": "USD", "timestamp": "2026-03-10T00:00:00Z", "description": "Consulting services"},
-        {"sender": "***9012", "receiver": "0x7a8b...", "amount": 280000.00, "currency": "USD", "timestamp": "2026-04-22T00:00:00Z", "description": "Advisory fees"},
-        {"sender": "0x7a8b...", "receiver": "0x3c4d...", "amount": 270000.00, "currency": "USD", "timestamp": "2026-05-30T00:00:00Z", "description": "Service payment"},
-        {"sender": "0x3c4d...", "receiver": "***1234", "amount": 260000.00, "currency": "USD", "timestamp": "2026-07-15T00:00:00Z", "description": "Crypto conversion"},
+    extraction["transactions"] = [
+        create_transaction(
+            accounts_by_number[row["sender_account"]].id,
+            accounts_by_number[row["receiver_account"]].id,
+            float(row["amount"]),
+            row["currency"],
+            f"{row['date']}T00:00:00Z",
+            row["description"],
+        )
+        for row in rows
     ]
-
-    # Repeated transfers (Chen → Rodriguez, 15 times)
-    import datetime
-    base_date = datetime.datetime(2026, 3, 1)
-    for i in range(15):
-        date = base_date + datetime.timedelta(days=i*6)
-        transactions.append({
-            "sender": "***1234",
-            "receiver": "***2345",
-            "amount": 9500.00,
-            "currency": "USD",
-            "timestamp": date.isoformat() + "Z",
-            "description": ["Bonus payment", "Commission", "Performance award"][i % 3]
-        })
-
-    # Structuring transactions (20 transactions $9K-$9.9K)
-    amounts = [9000, 9200, 9500, 9700, 9850, 9900]
-    receivers = ["***3456", "***4567", "***5678", "***9012"]
-    for i in range(20):
-        date = datetime.datetime(2026, 3, 12) + datetime.timedelta(days=i*3)
-        transactions.append({
-            "sender": "***1234",
-            "receiver": receivers[i % len(receivers)],
-            "amount": amounts[i % len(amounts)],
-            "currency": "USD",
-            "timestamp": date.isoformat() + "Z",
-            "description": "Business expense"
-        })
-
-    extraction["transactions"] = transactions
     extraction["metadata"]["mime_type"] = "text/csv"
-    extraction["metadata"]["row_count"] = 80
+    extraction["metadata"]["row_count"] = len(rows)
     return extraction
 
 
@@ -803,41 +804,32 @@ def extract_phone_records_csv(scenarios: dict) -> dict:
     extraction = create_base_extraction("phone_records_chen_202601_202606.csv", "csv_parse", 34567)
     extraction["raw_text"] = "datetime,from_number,to_number,duration_seconds,call_type\n2026-01-15 09:30:00,+1-415-555-0101,+1-415-555-0102,180,outgoing\n..."
 
-    # Include all people as PHONE entities + corresponding PERSON entities + LOCATION entities
+    people = scenarios["scenario_1"].people
+    locations = scenarios["scenario_1"].locations
+
+    def phone_id(person_id: str) -> str:
+        return person_id.replace("person_", "phone_", 1)
+
     extraction["entities"] = [
-        # Scenario 1 people with phones
-        {"entity_id": "person_chen_001", "type": "PHONE", "name": "+1-415-555-0101", "confidence": 0.98, "attributes": {"owner": "Marcus Chen"}},
-        {"entity_id": "person_rodriguez_001", "type": "PHONE", "name": "+1-415-555-0102", "confidence": 0.98, "attributes": {"owner": "Sarah Rodriguez"}},
-        {"entity_id": "person_kim_001", "type": "PHONE", "name": "+1-415-555-0103", "confidence": 0.98, "attributes": {"owner": "David Kim"}},
-        {"entity_id": "person_white_001", "type": "PHONE", "name": "+1-415-555-0104", "confidence": 0.98, "attributes": {"owner": "Jennifer White"}},
-        {"entity_id": "person_martinez_001", "type": "PHONE", "name": "+1-415-555-0105", "confidence": 0.98, "attributes": {"owner": "Robert Martinez"}},
-        {"entity_id": "person_thompson_001", "type": "PHONE", "name": "+1-415-555-0106", "confidence": 0.98, "attributes": {"owner": "Lisa Thompson"}},
-        {"entity_id": "person_brown_001", "type": "PHONE", "name": "+1-415-555-0107", "confidence": 0.98, "attributes": {"owner": "Michael Brown"}},
-        {"entity_id": "person_davis_001", "type": "PHONE", "name": "+1-415-555-0108", "confidence": 0.98, "attributes": {"owner": "Amanda Davis"}},
-        # Scenario 2 people with phones
-        {"entity_id": "person_morgan_001", "type": "PHONE", "name": "+1-408-555-0201", "confidence": 0.98, "attributes": {"owner": "Dr. Elizabeth Morgan"}},
-        {"entity_id": "person_parker_001", "type": "PHONE", "name": "+1-408-555-0202", "confidence": 0.98, "attributes": {"owner": "James Parker"}},
-        {"entity_id": "person_lee_001", "type": "PHONE", "name": "+1-408-555-0203", "confidence": 0.98, "attributes": {"owner": "Susan Lee"}},
-        {"entity_id": "person_wilson_001", "type": "PHONE", "name": "+1-408-555-0204", "confidence": 0.98, "attributes": {"owner": "Tom Wilson"}},
-        # Locations from scenarios
-        {"entity_id": "location_techventures_hq", "type": "LOCATION", "name": "TechVentures HQ", "confidence": 0.90, "attributes": {"address": "1500 Market St, San Francisco"}},
-        {"entity_id": "location_chen_residence", "type": "LOCATION", "name": "Chen Residence", "confidence": 0.90, "attributes": {"address": "2847 Pacific Ave, San Francisco"}},
-        {"entity_id": "location_cryptoholdings_office", "type": "LOCATION", "name": "CryptoHoldings Office", "confidence": 0.90, "attributes": {"address": "450 Sutter St, San Francisco"}},
-        {"entity_id": "location_bank_branch", "type": "LOCATION", "name": "First National Bank Branch", "confidence": 0.90, "attributes": {"address": "1 Montgomery St, San Francisco"}},
-        {"entity_id": "location_restaurant_meeting", "type": "LOCATION", "name": "Boulevard Restaurant", "confidence": 0.90, "attributes": {"address": "1 Mission St, San Francisco"}},
-        {"entity_id": "location_martinez_office", "type": "LOCATION", "name": "Martinez Law Office", "confidence": 0.90, "attributes": {"address": "555 California St, San Francisco"}},
-        {"entity_id": "location_clinic", "type": "LOCATION", "name": "Morgan Medical Clinic", "confidence": 0.90, "attributes": {"address": "789 Health Way, San Jose"}},
-        {"entity_id": "location_warehouse", "type": "LOCATION", "name": "PharmaCorp Warehouse", "confidence": 0.90, "attributes": {"address": "1200 Industrial Pkwy, San Jose"}},
-        {"entity_id": "location_morgan_residence", "type": "LOCATION", "name": "Dr. Morgan's Residence", "confidence": 0.90, "attributes": {"address": "456 Oak Street, San Jose"}},
-        {"entity_id": "location_parker_residence", "type": "LOCATION", "name": "Parker's Residence", "confidence": 0.90, "attributes": {"address": "123 Elm Street, San Jose"}},
+        {"entity_id": person.id, "type": "PERSON", "name": person.name, "confidence": 0.98, "attributes": {"role": person.role}}
+        for person in people
+    ] + [
+        {"entity_id": phone_id(person.id), "type": "PHONE", "name": person.phone, "confidence": 0.98, "attributes": {"owner_entity_id": person.id}}
+        for person in people
+    ] + [
+        {"entity_id": location.id, "type": "LOCATION", "name": location.name, "confidence": 0.90, "attributes": {"address": location.address}}
+        for location in locations
     ]
 
     extraction["relationships"] = [
-        {"source_entity_id": "person_chen_001", "target_entity_id": "person_rodriguez_001", "type": "CALLS", "confidence": 0.98, "context": "45 calls over 6 months"},
-        {"source_entity_id": "person_chen_001", "target_entity_id": "person_kim_001", "type": "CALLS", "confidence": 0.98, "context": "23 calls"},
-        {"source_entity_id": "person_kim_001", "target_entity_id": "person_martinez_001", "type": "CALLS", "confidence": 0.98, "context": "15 calls"},
-        {"source_entity_id": "person_chen_001", "target_entity_id": "person_brown_001", "type": "CALLS", "confidence": 0.98, "context": "12 calls"},
-        {"source_entity_id": "person_rodriguez_001", "target_entity_id": "person_white_001", "type": "CALLS", "confidence": 0.98, "context": "10 calls"}
+        {"source_entity_id": person.id, "target_entity_id": phone_id(person.id), "type": "OWNS", "confidence": 1.0, "context": "Phone number assigned to person"}
+        for person in people
+    ] + [
+        {"source_entity_id": phone_id("person_chen_001"), "target_entity_id": phone_id("person_rodriguez_001"), "type": "CALLS", "confidence": 0.98, "context": "45 calls over 6 months"},
+        {"source_entity_id": phone_id("person_chen_001"), "target_entity_id": phone_id("person_kim_001"), "type": "CALLS", "confidence": 0.98, "context": "23 calls"},
+        {"source_entity_id": phone_id("person_kim_001"), "target_entity_id": phone_id("person_martinez_001"), "type": "CALLS", "confidence": 0.98, "context": "15 calls"},
+        {"source_entity_id": phone_id("person_chen_001"), "target_entity_id": phone_id("person_brown_001"), "type": "CALLS", "confidence": 0.98, "context": "12 calls"},
+        {"source_entity_id": phone_id("person_rodriguez_001"), "target_entity_id": phone_id("person_white_001"), "type": "CALLS", "confidence": 0.98, "context": "10 calls"},
     ]
 
     extraction["metadata"]["mime_type"] = "text/csv"
@@ -847,29 +839,59 @@ def extract_phone_records_csv(scenarios: dict) -> dict:
 
 def extract_pharma_transactions_csv(scenarios: dict) -> dict:
     extraction = create_base_extraction("pharma_transactions_202603_202607.csv", "csv_parse", 23456)
-    extraction["raw_text"] = "date,from_account,to_account,amount,currency,memo\n2026-03-15,***6666,***5555,12000.00,USD,Consulting fees\n..."
+    csv_path = DATA_DIRECTORY / "evidence" / "csv" / extraction["evidence_filename"]
+    with csv_path.open("r", encoding="utf-8") as source:
+        rows = list(csv.DictReader(source))
+
+    scenario = scenarios["scenario_2"]
+    accounts_by_number = {account.account_number: account for account in scenario.accounts}
+    extraction["raw_text"] = "\n".join(
+        ["date,from_account,to_account,amount,currency,memo"]
+        + [",".join(row.values()) for row in rows[:3]]
+        + ["..."]
+    )
     extraction["entities"] = [
-        {"entity_id": "account_pharmacorp_001", "type": "BANK_ACCOUNT", "name": "Account ***6666", "confidence": 0.97, "attributes": {"owner": "PharmaCorp"}},
-        {"entity_id": "account_morganmedical_001", "type": "BANK_ACCOUNT", "name": "Account ***5555", "confidence": 0.97, "attributes": {"owner": "Morgan Medical"}},
-        {"entity_id": "account_healthinsure_001", "type": "BANK_ACCOUNT", "name": "Account ***7777", "confidence": 0.97, "attributes": {"owner": "HealthInsure"}}
+        {"entity_id": person.id, "type": "PERSON", "name": person.name, "confidence": 0.97, "attributes": {"role": person.role}}
+        for person in scenario.people
+    ] + [
+        {"entity_id": organization.id, "type": "ORGANIZATION", "name": organization.name, "confidence": 0.97, "attributes": {"registration_number": organization.registration_number}}
+        for organization in scenario.organizations
+    ] + [
+        {"entity_id": location.id, "type": "LOCATION", "name": location.name, "confidence": 0.95, "attributes": {"address": location.address}}
+        for location in scenario.locations
+    ] + [
+        {
+            "entity_id": account.id,
+            "type": "BANK_ACCOUNT",
+            "name": f"Account {account.account_number}",
+            "confidence": 0.97,
+            "attributes": {"owner_entity_id": account.owner_entity_id, "bank_name": account.bank_name},
+        }
+        for account in scenario.accounts
     ]
     extraction["relationships"] = [
         {"source_entity_id": "account_pharmacorp_001", "target_entity_id": "account_morganmedical_001", "type": "TRANSFERRED_FUNDS", "confidence": 0.98, "context": "8 kickback payments"}
     ]
     extraction["transactions"] = [
-        {"sender": "***6666", "receiver": "***5555", "amount": 12000.00, "currency": "USD", "timestamp": "2026-03-15T00:00:00Z", "description": "Consulting fees"},
-        {"sender": "***6666", "receiver": "***5555", "amount": 15000.00, "currency": "USD", "timestamp": "2026-04-10T00:00:00Z", "description": "Advisory services"},
-        {"sender": "***5555", "receiver": "***7777", "amount": 55000.00, "currency": "USD", "timestamp": "2026-03-20T00:00:00Z", "description": "Medical services billing"}
+        create_transaction(
+            accounts_by_number[row["from_account"]].id,
+            accounts_by_number[row["to_account"]].id,
+            float(row["amount"]),
+            row["currency"],
+            f"{row['date']}T00:00:00Z",
+            row["memo"],
+        )
+        for row in rows
     ]
     extraction["metadata"]["mime_type"] = "text/csv"
-    extraction["metadata"]["row_count"] = 40
+    extraction["metadata"]["row_count"] = len(rows)
     return extraction
 
 
 def generate_all_extractions(scenarios: dict):
     """Generate all 19 extraction JSON files"""
-    output_dir = "prepared-extractions"
-    os.makedirs(output_dir, exist_ok=True)
+    output_dir = DATA_DIRECTORY / "prepared-extractions"
+    output_dir.mkdir(exist_ok=True)
 
     print("Generating prepared extraction JSONs...")
 
@@ -901,8 +923,11 @@ def generate_all_extractions(scenarios: dict):
 
     for json_filename, extractor_func in extractors:
         extraction_data = extractor_func(scenarios)
-        filepath = os.path.join(output_dir, json_filename)
-        with open(filepath, 'w', encoding='utf-8') as f:
+        evidence_path = _find_evidence_path(extraction_data["evidence_filename"])
+        extraction_data["metadata"]["file_size_bytes"] = evidence_path.stat().st_size
+        extraction_data["metadata"]["sha256"] = _sha256(evidence_path)
+        filepath = output_dir / json_filename
+        with filepath.open('w', encoding='utf-8') as f:
             json.dump(extraction_data, f, indent=2, ensure_ascii=False)
         print(f"  ✓ Generated: {filepath}")
 

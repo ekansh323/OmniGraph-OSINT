@@ -153,7 +153,7 @@ synthetic-data/
 
 - Evidence files and extraction JSONs are **git-ignored** (generated locally only)
 - Only scripts and documentation are committed to the repository
-- Audio generation requires internet connection for Google Text-to-Speech
+- Audio generation uses local Windows text-to-speech first; Google Text-to-Speech is only a fallback
 - All dates are within 2026 timeline
 - All currency values use USD
 - Phone numbers use +1-415/408-555-XXXX format (invalid real numbers)

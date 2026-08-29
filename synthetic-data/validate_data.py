@@ -7,7 +7,16 @@ Validates all generated evidence files and extraction JSONs against requirements
 import os
 import json
 import sys
+from pathlib import Path
 from typing import Dict, List, Set
+
+
+DATA_DIRECTORY = Path(__file__).resolve().parent
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
 
 
 def validate_file_existence() -> bool:
@@ -151,6 +160,11 @@ def validate_json_schema() -> bool:
 
             # Validate entity types
             for entity in data['entities']:
+                required_entity_fields = {'entity_id', 'type', 'name', 'confidence', 'attributes'}
+                if missing_entity_fields := required_entity_fields - entity.keys():
+                    print(f"  ✗ {json_file}: Entity missing fields: {sorted(missing_entity_fields)}")
+                    all_valid = False
+                    continue
                 if entity['type'] not in valid_entity_types:
                     print(f"  ✗ {json_file}: Invalid entity type: {entity['type']}")
                     all_valid = False
@@ -162,9 +176,27 @@ def validate_json_schema() -> bool:
 
             # Validate relationship types
             for rel in data['relationships']:
+                required_relationship_fields = {'source_entity_id', 'target_entity_id', 'type', 'confidence', 'context'}
+                if missing_relationship_fields := required_relationship_fields - rel.keys():
+                    print(f"  ✗ {json_file}: Relationship missing fields: {sorted(missing_relationship_fields)}")
+                    all_valid = False
+                    continue
                 if rel['type'] not in valid_relationship_types:
                     print(f"  ✗ {json_file}: Invalid relationship type: {rel['type']}")
                     all_valid = False
+
+            for transaction in data['transactions']:
+                required_transaction_fields = {
+                    'sender_entity_id', 'receiver_entity_id', 'amount', 'currency', 'timestamp', 'description'
+                }
+                if missing_transaction_fields := required_transaction_fields - transaction.keys():
+                    print(f"  ✗ {json_file}: Transaction missing fields: {sorted(missing_transaction_fields)}")
+                    all_valid = False
+
+            metadata = data['metadata']
+            if not isinstance(metadata.get('sha256'), str) or len(metadata['sha256']) != 64:
+                print(f"  ✗ {json_file}: Invalid evidence SHA-256")
+                all_valid = False
 
         except json.JSONDecodeError as e:
             print(f"  ✗ {json_file}: Invalid JSON: {e}")
@@ -201,14 +233,29 @@ def validate_entity_consistency() -> bool:
             for entity in data['entities']:
                 entity_id = entity['entity_id']
                 if entity_id not in entity_occurrences:
-                    entity_occurrences[entity_id] = []
-                entity_occurrences[entity_id].append(json_file)
+                    entity_occurrences[entity_id] = {"files": [], "types": set()}
+                entity_occurrences[entity_id]["files"].append(json_file)
+                entity_occurrences[entity_id]["types"].add(entity['type'])
 
-        except Exception:
-            pass
+        except Exception as error:
+            print(f"  ✗ Could not read {json_file}: {error}")
+            return False
 
     # Check for entities appearing in multiple files
-    multi_file_entities = {eid: files for eid, files in entity_occurrences.items() if len(files) > 1}
+    inconsistent_types = {
+        entity_id: occurrence["types"]
+        for entity_id, occurrence in entity_occurrences.items()
+        if len(occurrence["types"]) > 1
+    }
+    if inconsistent_types:
+        print(f"  ✗ Entity IDs used with multiple types: {inconsistent_types}")
+        return False
+
+    multi_file_entities = {
+        entity_id: occurrence["files"]
+        for entity_id, occurrence in entity_occurrences.items()
+        if len(occurrence["files"]) > 1
+    }
 
     if not multi_file_entities:
         print(f"  ✗ No entities found in multiple files (cross-file correlation required)")
@@ -289,9 +336,9 @@ def validate_entity_counts() -> bool:
         if actual_count < required_count:
             all_met = False
 
-    status = "✓" if total_accounts >= 23 else "✗"
-    print(f"  {status} ACCOUNTS (BANK + CRYPTO): {total_accounts} (required: 23)")
-    if total_accounts < 23:
+    status = "✓" if total_accounts == 30 else "✗"
+    print(f"  {status} ACCOUNTS (BANK + CRYPTO): {total_accounts} (required: 30)")
+    if total_accounts != 30:
         all_met = False
 
     return all_met
@@ -316,23 +363,24 @@ def validate_transaction_patterns() -> bool:
         except Exception:
             pass
 
-    # Check for transaction cycle
-    cycle_found = False
-    accounts = set()
-    for txn in all_transactions:
-        accounts.add(txn.get('sender', ''))
-        accounts.add(txn.get('receiver', ''))
+    adjacency = {}
+    for transaction in all_transactions:
+        adjacency.setdefault(transaction['sender_entity_id'], set()).add(transaction['receiver_entity_id'])
 
-    # Simple check: look for ***1234 appearing as both sender and receiver
-    chen_account = '***1234'
-    chen_as_sender = any(txn.get('sender') == chen_account for txn in all_transactions)
-    chen_as_receiver = any(txn.get('receiver') == chen_account for txn in all_transactions)
-    cycle_found = chen_as_sender and chen_as_receiver
+    def reaches_start(start: str, current: str, path: set[str]) -> bool:
+        for target in adjacency.get(current, set()):
+            if target == start and len(path) >= 3:
+                return True
+            if target not in path and reaches_start(start, target, path | {target}):
+                return True
+        return False
+
+    cycle_found = any(reaches_start(entity_id, entity_id, {entity_id}) for entity_id in adjacency)
 
     # Count repeated transfers (same sender-receiver pairs)
     sender_receiver_pairs = {}
     for txn in all_transactions:
-        pair = (txn.get('sender'), txn.get('receiver'))
+        pair = (txn.get('sender_entity_id'), txn.get('receiver_entity_id'))
         sender_receiver_pairs[pair] = sender_receiver_pairs.get(pair, 0) + 1
 
     repeated_count = sum(1 for count in sender_receiver_pairs.values() if count >= 10)
@@ -400,10 +448,10 @@ def validate_timeline() -> bool:
     """Validate timestamps are within scenario timeline"""
     print("\n[8/9] Validating timeline...")
 
-    from datetime import datetime
+    from datetime import datetime, timezone
 
-    min_date = datetime(2026, 1, 1)
-    max_date = datetime(2026, 8, 28)
+    min_date = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    max_date = datetime(2026, 8, 28, 23, 59, 59, tzinfo=timezone.utc)
 
     invalid_timestamps = []
     json_dir = 'prepared-extractions'
@@ -423,10 +471,10 @@ def validate_timeline() -> bool:
                         ts = datetime.fromisoformat(txn['timestamp'].replace('Z', '+00:00'))
                         if not (min_date <= ts <= max_date):
                             invalid_timestamps.append((json_file, txn['timestamp']))
-                    except Exception:
-                        pass
-        except Exception:
-            pass
+                    except Exception as error:
+                        invalid_timestamps.append((json_file, f"{txn.get('timestamp')}: {error}"))
+        except Exception as error:
+            invalid_timestamps.append((json_file, f"Could not read file: {error}"))
 
     if invalid_timestamps:
         print(f"  ✗ {len(invalid_timestamps)} timestamps outside timeline")
@@ -468,6 +516,7 @@ def validate_evidence_json_matching() -> bool:
 
 def main():
     """Run all validation checks"""
+    os.chdir(DATA_DIRECTORY)
     print("=" * 60)
     print("OmniGraph OSINT - Synthetic Data Validation")
     print("=" * 60)

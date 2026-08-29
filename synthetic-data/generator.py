@@ -9,15 +9,16 @@ import sys
 from scenarios import load_scenarios
 from generate_documents import generate_all_documents
 from generate_images import generate_all_images
-try:
-    from generate_audio import generate_all_audio
-    AUDIO_AVAILABLE = True
-except ImportError:
-    AUDIO_AVAILABLE = False
-    print("Warning: Audio generation not available (missing gTTS/pydub)")
+from generate_audio import generate_all_audio
 from generate_transactions import generate_all_transactions
 from generate_extractions import generate_all_extractions
 from validate_data import main as validate
+
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
 
 
 def main():
@@ -50,18 +51,12 @@ def main():
 
     # Generate audio
     print("\n[4/6] Generating audio evidence files...")
-    if AUDIO_AVAILABLE:
-        try:
-            audio_files = generate_all_audio(scenarios)
-            if audio_files:
-                print(f"  ✓ Generated {len(audio_files)} audio files")
-            else:
-                print(f"  ⚠ Audio generation skipped (requires internet for gTTS)")
-        except Exception as e:
-            print(f"  ⚠ Audio generation failed: {e}")
-            print(f"  Note: Audio requires internet connection for gTTS. Continuing...")
-    else:
-        print(f"  ⚠ Audio generation skipped (gTTS/pydub not installed)")
+    try:
+        audio_files = generate_all_audio(scenarios)
+        print(f"  ✓ Generated {len(audio_files)} audio files")
+    except Exception as e:
+        print(f"  ✗ Audio generation failed: {e}")
+        return 1
 
     # Generate CSV
     print("\n[5/6] Generating CSV evidence files...")

@@ -49,10 +49,9 @@ OmniGraph OSINT correlates synthetic evidence (documents, images, audio, financi
 ### Prerequisites
 
 - Docker & Docker Compose
-- Node.js 18+ and npm
 - Python 3.11+
-- AWS CLI configured (for S3 access)
-- PostgreSQL client (psql)
+
+AWS, the API, and the web interface are intentionally scheduled for later milestones. Milestones 1 and 2 run locally and use only synthetic data.
 
 ### Local Development Setup
 
@@ -62,51 +61,27 @@ OmniGraph OSINT correlates synthetic evidence (documents, images, audio, financi
    cd omnigraph-osint
    ```
 
-2. **Start PostgreSQL**
-   ```bash
-   docker-compose up -d postgres
+2. **Create and activate a virtual environment**
+   ```powershell
+   py -3.11 -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   pip install -r synthetic-data\requirements.txt -r database\requirements.txt
    ```
 
-3. **Set up backend**
-   ```bash
-   cd backend
-   python -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   
-   # Copy environment template
-   cp ../.env.example .env
-   # Edit .env with your configuration
-   
-   # Run migrations
-   alembic upgrade head
-   
-   # Start backend
-   uvicorn app.main:app --reload
+3. **Generate and validate the synthetic evidence set**
+   ```powershell
+   .\.venv\Scripts\python.exe synthetic-data\generator.py
    ```
-   Backend runs at http://localhost:8000
 
-4. **Set up frontend**
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
+4. **Start PostgreSQL and initialize the M2 schema**
+   ```powershell
+   docker compose up -d postgres
+   .\.venv\Scripts\python.exe -m alembic -c database\alembic.ini upgrade head
+   .\.venv\Scripts\python.exe database\seed.py
+   .\.venv\Scripts\python.exe -m pytest database\tests
    ```
-   Frontend runs at http://localhost:5173
 
-5. **Access the application**
-   - Frontend: http://localhost:5173
-   - API docs: http://localhost:8000/docs
-   - API redoc: http://localhost:8000/redoc
-
-### Generate Synthetic Data
-
-```bash
-cd synthetic-data
-python generator.py
-```
-
-This creates sample evidence files and prepared extraction results.
+The M2 seed contains two small synthetic cases only. Importing all M1 evidence into the database belongs to the later processing milestone.
 
 ## Project Structure
 
@@ -127,8 +102,9 @@ omnigraph-osint/
 │   │   └── main.py       # FastAPI app
 │   └── requirements.txt
 ├── database/
-│   ├── schema.sql        # PostgreSQL schema
-│   └── migrations/       # Alembic migrations
+│   ├── migrations/       # Versioned Alembic schema migrations
+│   ├── seed.py           # Small synthetic M2 seed set
+│   └── tests/            # PostgreSQL schema checks
 ├── processing/           # Evidence processing modules
 │   ├── ocr.py
 │   ├── transcription.py
@@ -244,11 +220,11 @@ npm run lint
 # Connect to database
 psql omnigraph_osint
 
-# Run schema
-psql -d omnigraph_osint -f database/schema.sql
+# Apply versioned schema migrations
+python -m alembic -c database/alembic.ini upgrade head
 
 # Load seed data
-psql -d omnigraph_osint -f database/seed-data.sql
+python database/seed.py
 
 # Backup database
 pg_dump omnigraph_osint > backup.sql
@@ -338,6 +314,6 @@ This is an academic project for university demonstration purposes.
 
 ---
 
-**Project Status:** Foundation established, ready for implementation (Milestone 1)
+**Project Status:** Milestone 1 synthetic data generation is complete. Milestone 2's versioned PostgreSQL schema and small seed set are implemented; live database verification requires Docker Engine to be running.
 
-**Next Steps:** Follow [TASKS.md](./TASKS.md) starting with Milestone 1 (Synthetic Data Generation)
+**Next Steps:** Complete the live M2 verification, then begin the backend APIs in Milestone 3.
