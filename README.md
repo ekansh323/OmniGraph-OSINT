@@ -327,7 +327,8 @@ This is an academic project for university demonstration purposes.
 
 ## Contributors
 
-[Your team names and roles]
+Ekansh Yadav 24BYB0077  
+Kriday Narula 24BYB0033
 
 ## Acknowledgments
 
