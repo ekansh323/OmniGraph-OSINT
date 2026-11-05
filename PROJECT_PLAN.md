@@ -1,56 +1,42 @@
 # OmniGraph OSINT — Project Implementation Plan
 
-## Project title
+## Project Title
 
-**OmniGraph OSINT: AWS-Based Multimodal Evidence Correlation and Financial-Transaction Graph Analysis**
+**OmniGraph OSINT: Multimodal Evidence Correlation and Financial-Transaction Graph Analysis**
 
-## Project objective
+## Project Objective
 
-Build a low-cost university prototype that accepts synthetic investigation evidence, extracts entities and relationships, stores them in PostgreSQL, detects suspicious transaction patterns, and displays the results as an interactive graph.
+Build a university prototype that accepts synthetic investigation evidence, extracts entities and relationships, stores them in a local PostgreSQL database, detects suspicious transaction patterns, and displays the results as an interactive graph.
 
-The system will be developed locally, while Amazon S3 is used from the beginning for evidence-file storage. After the local application is stable, the remaining components will be deployed to AWS.
+The entire system runs locally — no cloud services required.
 
-## Development strategy
+## Technology Stack
 
-### Local development
+### Local Stack
 
 - React/Vite frontend
 - FastAPI backend
-- Local PostgreSQL database
-- Amazon S3 for evidence files
+- Local PostgreSQL database (via Docker)
+- Local filesystem storage for evidence files
 - Local OCR and speech-to-text processing
 - Synthetic evidence and transaction data
 
-### Final AWS deployment
+## Storage Strategy
 
-- Amazon S3 for frontend hosting and evidence storage
-- Amazon API Gateway for REST APIs
-- AWS Lambda for lightweight API and worker functions
-- Amazon SQS for asynchronous evidence processing
-- Amazon RDS PostgreSQL for the production demonstration database
-- IAM for permissions
-- CloudWatch for logs
-
-## AWS-first integration rule
-
-The application must keep storage and configuration behind simple interfaces. The rest of the code should call functions such as `upload_evidence()` and `get_evidence()` rather than directly embedding S3-specific logic everywhere.
-
-Environment variables will control deployment settings:
+Evidence files are stored on the **local filesystem** inside a configured directory (default: `./evidence/`). The backend uses a simple storage abstraction so upload/download logic is decoupled from route handlers:
 
 ```text
-STORAGE_MODE=s3
-DATABASE_URL=...
-AWS_REGION=...
-S3_BUCKET_NAME=...
-SQS_QUEUE_URL=...
+STORAGE_MODE=local
+DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/omnigraph_osint
+EVIDENCE_DIR=./evidence
 ```
 
-The local database can later be replaced by RDS by changing the database connection string and importing the same PostgreSQL schema and synthetic data.
+This keeps the codebase clean and straightforward.
 
-## Core implementation scope
+## Core Implementation Scope
 
 - Case creation and management
-- Evidence upload to S3
+- Evidence upload to local filesystem
 - SHA-256 evidence hashing
 - PDF/image OCR for selected sample files
 - Short-audio transcription as an optional supported input
@@ -64,8 +50,9 @@ The local database can later be replaced by RDS by changing the database connect
 - Timeline filtering
 - Basic investigation-summary export
 
-## Explicit exclusions
+## Explicit Exclusions
 
+- Any AWS or cloud service integration
 - Darknet crawling
 - Live bank integration
 - Live cryptocurrency monitoring
@@ -77,40 +64,23 @@ The local database can later be replaced by RDS by changing the database connect
 - Large-scale OSINT crawling
 - Real confidential evidence
 
-## Suggested milestone order
+## Milestone Order
 
 1. Define synthetic cases and evidence files.
 2. Create and test the PostgreSQL schema locally.
 3. Build the backend case, evidence, entity, and graph APIs.
-4. Add S3 upload and download functionality.
+4. Add local filesystem upload and download functionality.
 5. Add OCR, CSV parsing, and structured extraction.
 6. Add recursive graph queries and cycle alerts.
 7. Build the React graph dashboard.
-8. Add SQS and Lambda processing.
-9. Migrate the database to RDS PostgreSQL.
-10. Host the frontend on S3 and expose APIs through API Gateway.
-11. Add IAM permissions and CloudWatch logging.
-12. Run an end-to-end AWS demonstration and prepare screenshots.
+8. End-to-end testing, documentation, and demo preparation.
 
-## Cost-control rules
+## Expected Result
 
-- Use synthetic data only.
-- Keep evidence files small.
-- Use local OCR and speech processing where possible.
-- Avoid paid LLM calls during repeated demonstrations.
-- Do not create a NAT Gateway.
-- Do not use Neptune, OpenSearch, SageMaker, ECS, or Kubernetes.
-- Set AWS Budgets and billing alerts.
-- Stop or delete temporary resources after evaluation.
-- Keep RDS active only when needed for testing and presentation.
+The final demonstration shows this complete local workflow:
 
-## Expected result
-
-The final demonstration should show this complete workflow:
-
-```text
-Upload evidence → S3 → SQS → Lambda → RDS PostgreSQL
-                                      ↓
-                         API Gateway → React graph dashboard
 ```
-
+Upload evidence → Local filesystem → Processing service → PostgreSQL
+                                                         ↓
+                                     FastAPI → React graph dashboard
+```
