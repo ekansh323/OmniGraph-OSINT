@@ -1,17 +1,18 @@
 # OmniGraph OSINT
 
-**Cloud-Deployable Investigation Support Prototype**
+**Local-First Investigation Support Prototype**
 
 > ⚠️ **Academic Project Disclaimer**: This is a university demonstration project using **synthetic data only**. It is not intended for real criminal investigations, legal proceedings, or production law enforcement use.
 
 ## Overview
 
 OmniGraph OSINT correlates synthetic evidence (documents, images, audio, financial transactions) into a relational entity graph. The system demonstrates:
-- AWS cloud services (S3, SQS, Lambda, RDS, API Gateway, IAM, CloudWatch)
 - PostgreSQL advanced features (recursive CTEs, graph queries)
 - Multimodal data processing (OCR, speech-to-text, CSV parsing)
 - Entity relationship visualization
 - Transaction pattern detection
+
+The project runs **entirely locally** — no cloud accounts or internet connectivity required.
 
 ## Technology Stack
 
@@ -20,23 +21,14 @@ OmniGraph OSINT correlates synthetic evidence (documents, images, audio, financi
 - Vite (build tool)
 - Tailwind CSS with Factory design system
 - Cytoscape.js (graph visualization)
-- React Query (state management)
+- React Query (server state management)
+- Zustand (client state)
 
 **Backend:**
 - FastAPI (Python 3.11+)
 - SQLAlchemy (async ORM)
-- PostgreSQL 14+
-- Boto3 (AWS SDK)
-
-**AWS Services:**
-- S3 (evidence storage + frontend hosting)
-- SQS (processing queue)
-- Lambda (API + workers)
-- RDS PostgreSQL (database)
-- API Gateway (REST API)
-- CloudFront (CDN)
-- IAM (security)
-- CloudWatch (monitoring)
+- Alembic (migrations)
+- PostgreSQL 14+ (via Docker)
 
 **Processing:**
 - Tesseract OCR (PDF/images)
@@ -51,8 +43,7 @@ OmniGraph OSINT correlates synthetic evidence (documents, images, audio, financi
 - Docker & Docker Compose
 - Node.js 18+ and npm
 - Python 3.11+
-- AWS CLI configured (for S3 access)
-- PostgreSQL client (psql)
+- PostgreSQL client (psql, optional)
 
 ### Local Development Setup
 
@@ -73,14 +64,14 @@ OmniGraph OSINT correlates synthetic evidence (documents, images, audio, financi
    python -m venv venv
    source venv/bin/activate  # Windows: venv\Scripts\activate
    pip install -r requirements.txt
-   
+
    # Copy environment template
    cp ../.env.example .env
    # Edit .env with your configuration
-   
+
    # Run migrations
    alembic upgrade head
-   
+
    # Start backend
    uvicorn app.main:app --reload
    ```
@@ -124,6 +115,7 @@ omnigraph-osint/
 │   │   ├── api/          # Route handlers
 │   │   ├── models/       # SQLAlchemy models
 │   │   ├── services/     # Business logic
+│   │   ├── storage.py    # Local filesystem storage abstraction
 │   │   └── main.py       # FastAPI app
 │   └── requirements.txt
 ├── database/
@@ -133,13 +125,12 @@ omnigraph-osint/
 │   ├── ocr.py
 │   ├── transcription.py
 │   └── entity_extractor.py
+├── evidence/             # Uploaded evidence files (local storage)
 ├── synthetic-data/       # Sample evidence files
 │   ├── evidence/
 │   └── prepared-extractions/
-├── infrastructure/       # AWS IaC (Terraform)
 ├── docs/                 # Documentation
 │   ├── API.md
-│   ├── DEPLOYMENT.md
 │   └── DEMO_GUIDE.md
 ├── docker-compose.yml
 ├── .env.example
@@ -154,8 +145,8 @@ omnigraph-osint/
 ### Evidence Management
 - Upload PDFs, images, audio files, CSV transaction logs
 - SHA-256 hash verification
-- Stored in Amazon S3
-- Asynchronous processing via SQS + Lambda
+- Stored in local filesystem (`./evidence/`)
+- Synchronous processing inline (no queue needed)
 
 ### Entity Extraction
 - **Supported Types**: Person, Organization, Phone, Email, Bank Account, Crypto Wallet, Location, IP Address
@@ -195,8 +186,7 @@ omnigraph-osint/
 - **[CLAUDE.md](./CLAUDE.md)** - Engineering guidance for AI coding assistants
 - **[DESIGN.md](./DESIGN.md)** - Factory UI design system
 - **[docs/API.md](./docs/API.md)** - API reference (created in milestone 3)
-- **[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)** - AWS deployment guide (created in milestone 12)
-- **[docs/DEMO_GUIDE.md](./docs/DEMO_GUIDE.md)** - Demo walkthrough (created in milestone 14)
+- **[docs/DEMO_GUIDE.md](./docs/DEMO_GUIDE.md)** - Demo walkthrough (created in milestone 8)
 
 ## Development Commands
 
@@ -204,9 +194,6 @@ omnigraph-osint/
 ```bash
 # Run development server
 uvicorn app.main:app --reload
-
-# Run with AWS S3
-STORAGE_MODE=s3 uvicorn app.main:app --reload
 
 # Run tests
 pytest
@@ -269,30 +256,6 @@ docker-compose logs -f postgres
 docker-compose up -d --build
 ```
 
-## AWS Deployment
-
-See **[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)** for detailed AWS deployment instructions.
-
-**Quick summary:**
-1. Create S3 bucket for evidence storage
-2. Deploy Lambda functions (API + workers)
-3. Create SQS queue with S3 event notifications
-4. Set up RDS PostgreSQL instance
-5. Configure API Gateway
-6. Build and deploy frontend to S3 + CloudFront
-7. Configure IAM roles and CloudWatch monitoring
-
-**Estimated AWS costs:** ~$15-40/month (with cost controls)
-
-## Cost Control Measures
-
-- RDS t3.micro instance (~$12/month)
-- Lambda pay-per-invocation (bursty workload)
-- S3 lifecycle policies (90-day retention)
-- No NAT Gateway, Neptune, OpenSearch, or SageMaker
-- CloudWatch log retention: 7 days
-- AWS Budget alerts at $10, $20, $50
-
 ## Testing
 
 ```bash
@@ -316,8 +279,6 @@ npm run test:e2e
 
 - **Never commit secrets**: All secrets go in `.env` (in `.gitignore`)
 - **Synthetic data only**: No real PII, credentials, or confidential information
-- **S3 bucket policies**: Block all public access
-- **IAM least privilege**: Each Lambda gets minimum required permissions
 - **Input validation**: File size limits, MIME type checks, hash verification
 - **SQL injection prevention**: Parameterized queries via SQLAlchemy ORM
 
@@ -332,13 +293,12 @@ Kriday Narula 24BYB0033
 
 ## Acknowledgments
 
-- AWS for cloud infrastructure
 - PostgreSQL for graph query capabilities
 - Cytoscape.js for visualization
 - Factory design system for UI styling
 
 ---
 
-**Project Status:** Foundation established, ready for implementation (Milestone 1)
+**Project Status:** Milestone 1 (Synthetic Data) complete — ready for Milestone 2 (Database Schema)
 
-**Next Steps:** Follow [TASKS.md](./TASKS.md) starting with Milestone 1 (Synthetic Data Generation)
+**Next Steps:** Follow [TASKS.md](./TASKS.md) starting with Milestone 2 (Database Schema & Migrations)
