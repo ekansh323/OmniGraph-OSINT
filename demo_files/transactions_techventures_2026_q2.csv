@@ -1,0 +1,81 @@
+date,sender_account,receiver_account,amount,currency,description
+2026-02-15,***1234,***5678,300000.0,USD,Investment capital
+2026-03-01,***1234,***2345,9500.0,USD,Performance award
+2026-03-07,***1234,***2345,9500.0,USD,Bonus payment
+2026-03-10,***5678,***9012,300000.0,USD,Consulting services
+2026-03-12,***1234,***3456,9500.0,USD,Business expense
+2026-03-12,***1234,***3456,9000.0,USD,Business expense
+2026-03-12,***1234,***3456,9000.0,USD,Business expense
+2026-03-13,***1234,***2345,9500.0,USD,Bonus payment
+2026-03-15,***5678,***9012,250000.0,USD,Large consulting payment
+2026-03-19,***1234,***2345,9500.0,USD,Performance award
+2026-03-25,***1234,***2345,9500.0,USD,Performance award
+2026-03-31,***1234,***2345,9500.0,USD,Performance award
+2026-04-01,***5678,***8901,978.94,USD,Utilities
+2026-04-03,***5678,***7890,4333.02,USD,Office supplies
+2026-04-04,***5678,***5678,4606.58,USD,Insurance
+2026-04-06,***5678,***6789,964.76,USD,Travel expense
+2026-04-06,***1234,***2345,9500.0,USD,Bonus payment
+2026-04-07,***5678,***5678,3503.69,USD,Software license
+2026-04-08,***1234,***4567,9500.0,USD,Business expense
+2026-04-08,***1234,***4567,9500.0,USD,Business expense
+2026-04-08,***1234,***9012,9700.0,USD,Business expense
+2026-04-08,***1234,***4567,9900.0,USD,Business expense
+2026-04-10,***5678,***5678,1032.13,USD,Office supplies
+2026-04-11,***5678,***7890,4182.39,USD,Software license
+2026-04-12,***1234,***2345,9500.0,USD,Bonus payment
+2026-04-13,***5678,***6789,4292.69,USD,Legal fees
+2026-04-14,***5678,***6789,554.75,USD,Travel expense
+2026-04-17,***5678,***5678,4156.24,USD,Travel expense
+2026-04-18,***1234,***2345,9500.0,USD,Bonus payment
+2026-04-18,***5678,***8901,556.78,USD,Equipment
+2026-04-18,***9012,***1357,200000.0,USD,Advisory services
+2026-04-19,***5678,***5678,2927.61,USD,Utilities
+2026-04-20,***5678,***6789,3637.15,USD,Travel expense
+2026-04-22,***5678,***6789,1464.61,USD,Travel expense
+2026-04-22,***9012,0x7a8b...,280000.0,USD,Advisory fees
+2026-04-24,***1234,***2345,9500.0,USD,Performance award
+2026-04-25,***5678,***6789,3578.81,USD,Equipment
+2026-04-28,***5678,***5678,608.68,USD,Software license
+2026-04-30,***1234,***2345,9500.0,USD,Bonus payment
+2026-05-01,***5678,***8901,1085.07,USD,Software license
+2026-05-04,***5678,***8901,662.29,USD,Software license
+2026-05-06,***1234,***2345,9500.0,USD,Performance award
+2026-05-07,***5678,***5678,4927.7,USD,Insurance
+2026-05-10,***5678,***6789,2962.93,USD,Travel expense
+2026-05-11,***5678,***5678,1858.18,USD,Legal fees
+2026-05-12,***5678,***5678,4619.73,USD,Legal fees
+2026-05-12,***1234,***2345,9500.0,USD,Bonus payment
+2026-05-13,***5678,***6789,2208.72,USD,Equipment
+2026-05-14,***5678,***7890,2320.09,USD,Software license
+2026-05-14,***1234,***3456,9900.0,USD,Business expense
+2026-05-14,***1234,***3456,9850.0,USD,Business expense
+2026-05-14,***1234,***4567,9200.0,USD,Business expense
+2026-05-17,***5678,***7890,2953.0,USD,Software license
+2026-05-18,***1234,***2345,9500.0,USD,Bonus payment
+2026-05-20,***5678,***7890,1187.76,USD,Legal fees
+2026-05-21,***5678,***8901,1185.19,USD,Travel expense
+2026-05-24,***1234,***2345,9500.0,USD,Commission
+2026-05-24,***5678,***8901,4025.71,USD,Utilities
+2026-05-25,***5678,***8901,3086.87,USD,Equipment
+2026-05-28,***5678,***7890,861.64,USD,Software license
+2026-05-29,***5678,***8901,1665.39,USD,Insurance
+2026-05-30,0x7a8b...,0x3c4d...,270000.0,USD,Service payment
+2026-06-01,***5678,***5678,1088.85,USD,Travel expense
+2026-06-02,***5678,***6789,2473.18,USD,Software license
+2026-06-03,***5678,***7890,2372.23,USD,Insurance
+2026-06-04,***5678,***6789,3628.31,USD,Utilities
+2026-06-05,***1234,***9012,9200.0,USD,Business expense
+2026-06-05,***1234,***3456,9850.0,USD,Business expense
+2026-06-05,***1234,***4567,9850.0,USD,Business expense
+2026-06-05,***1234,***9012,9500.0,USD,Business expense
+2026-06-05,***5678,***8901,2101.58,USD,Travel expense
+2026-06-07,***5678,***7890,2644.9,USD,Insurance
+2026-06-08,***5678,***5678,3506.62,USD,Insurance
+2026-06-10,***5678,***5678,3850.12,USD,Equipment
+2026-06-10,***1357,***2468,180000.0,USD,Service fees
+2026-06-13,***5678,***7890,2350.8,USD,Equipment
+2026-06-15,***5678,***7890,4468.16,USD,Software license
+2026-06-18,***5678,***8901,3931.32,USD,Office supplies
+2026-07-01,***2468,***7777,175000.0,USD,Offshore transfer
+2026-07-15,0x3c4d...,***1234,260000.0,USD,Crypto conversion
