@@ -22,6 +22,8 @@ from ..schemas import (
 from ..storage import storage
 from ..services.ner import extract_entities
 from ..services.extractor import process_evidence_extraction
+from ..services.graph_service import detect_anomalies
+from ..models import Alert
 
 router = APIRouter()
 
@@ -78,6 +80,28 @@ async def upload_evidence(
     entities_count = 0
     try:
         entities_count = await process_evidence_extraction(evidence, content, db)
+        # Automatically generate alerts for suspicious transaction patterns
+        anomalies = await detect_anomalies(evidence.case_id, db)
+        for a in anomalies:
+            # Check if this exact alert type/description already exists in this case
+            existing_alert = await db.execute(
+                select(Alert).where(
+                    Alert.case_id == evidence.case_id,
+                    Alert.type == a["type"],
+                    Alert.description == a["description"],
+                )
+            )
+            if not existing_alert.scalars().first():
+                new_alert = Alert(
+                    case_id=evidence.case_id,
+                    type=a["type"],
+                    severity=a["severity"],
+                    description=a["description"],
+                    related_entity_ids=[UUID(i) for i in a.get("related_entity_ids", [])],
+                    related_transaction_ids=[UUID(i) for i in a.get("related_transaction_ids", [])],
+                )
+                db.add(new_alert)
+        await db.commit()
     except Exception as e:
         evidence.processing_status = "failed"
         evidence.processing_error = str(e)
