@@ -1,31 +1,39 @@
-# backend/app/database.py
 """Async SQLAlchemy database engine and session utilities.
 
-Configuration is taken from the environment variable ``DATABASE_URL``
-(e.g. ``postgresql+asyncpg://admin:development@localhost:5432/omnigraph_osint``).
-The module provides ``engine`` and ``AsyncSessionLocal`` for dependency
-injection in FastAPI routes.
+Loads DATABASE_URL from .env with fallback to local development postgres.
+Provides engine and get_db dependency for FastAPI routes.
 """
 
 import os
+from pathlib import Path
+from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL environment variable not set")
+# Load .env file from project root
+env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+if env_path.is_file():
+    load_dotenv(dotenv_path=env_path)
+else:
+    load_dotenv()
 
-# Async engine using asyncpg driver.
+DEFAULT_DB_URL = "postgresql+asyncpg://admin:development@127.0.0.1:5433/omnigraph_osint"
+DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_DB_URL)
+
+# Async engine using asyncpg driver
 engine = create_async_engine(DATABASE_URL, echo=False, future=True)
 
-# Session factory for async sessions.
+# Session factory for async sessions
 AsyncSessionLocal = sessionmaker(
     bind=engine,
     class_=AsyncSession,
     expire_on_commit=False,
 )
 
-# FastAPI dependency (optional).
 async def get_db() -> AsyncSession:
+    """FastAPI dependency to yield an async database session."""
     async with AsyncSessionLocal() as session:
-        yield session
+        try:
+            yield session
+        finally:
+            await session.close()
