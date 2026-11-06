@@ -58,26 +58,17 @@ The project runs **entirely locally** — no cloud accounts or internet connecti
    docker-compose up -d postgres
    ```
 
-3. **Set up backend**
+3. **Set up and start backend**
    ```bash
-   cd backend
-   python -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-
-   # Copy environment template
-   cp ../.env.example .env
-   # Edit .env with your configuration
-
-   # Run migrations
-   alembic upgrade head
-
+   source .venv/bin/activate
+   # Seed the synthetic forensic investigation scenario
+   python -m backend.app.services.seed_data
    # Start backend
-   uvicorn app.main:app --reload
+   uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
    ```
-   Backend runs at http://localhost:8000
+   Backend runs at http://localhost:8000 (Interactive docs at `/docs`)
 
-4. **Set up frontend**
+4. **Set up and start frontend**
    ```bash
    cd frontend
    npm install
