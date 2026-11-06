@@ -20,7 +20,10 @@ from .api import (
     entities as entities_router,
     relationships as relationships_router,
     alerts as alerts_router,
+    graph as graph_router,
+    transactions as transactions_router,
 )
+from .services.seed_data import seed_database
 
 
 @asynccontextmanager
@@ -64,6 +67,15 @@ app.include_router(evidence_router.router, prefix="/api/evidence", tags=["Eviden
 app.include_router(entities_router.router, prefix="/api/entities", tags=["Entities"])
 app.include_router(relationships_router.router, prefix="/api/relationships", tags=["Relationships"])
 app.include_router(alerts_router.router, prefix="/api/alerts", tags=["Alerts"])
+app.include_router(graph_router.router, prefix="/api/graph", tags=["Graph & Analytics"])
+app.include_router(transactions_router.router, prefix="/api/transactions", tags=["Transactions"])
+
+
+@app.post("/api/demo/reset", tags=["Demo & Seeding"])
+async def reset_demo_data():
+    """Reset and re-seed the investigation demo scenario."""
+    case_id = await seed_database()
+    return {"status": "ok", "message": "Demo data reseeded successfully", "case_id": str(case_id)}
 
 
 @app.get("/", tags=["General"])
