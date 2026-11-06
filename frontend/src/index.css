@@ -1,0 +1,677 @@
+/* ==========================================================================
+   FACTORY DESIGN SYSTEM — OmniGraph OSINT War Room
+   Reference: DESIGN.md
+   "Terminal war room at midnight: deep obsidian canvas, flat weight-400 Geist
+   typography, hairline borders, and functional signal accents."
+   ========================================================================== */
+
+:root {
+  /* Surface & Canvas Tokens */
+  --color-obsidian-canvas: #101010;
+  --color-carbon-lift: #1d1a18;
+  --color-ash-stroke: #3d3a39;
+  --color-graphite-mid: #4d4947;
+  --color-warm-granite: #8a8380;
+  --color-pale-stone: #b8b3b0;
+  --color-bone: #eeeeee;
+  --color-chalk: #fafafa;
+  --color-signal-orange: #ee6018;
+  --color-metric-green: #a0ca92;
+
+  /* Typography Tokens */
+  --font-geist: 'Geist', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-geist-mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Type Scale */
+  --text-caption: 12px;
+  --leading-caption: 1;
+  --tracking-caption: -0.24px;
+
+  --text-body-sm: 14px;
+  --leading-body-sm: 1.43;
+
+  --text-body: 16px;
+  --leading-body: 1.5;
+
+  --text-heading: 32px;
+  --leading-heading: 1.1;
+  --tracking-heading: -1.12px;
+
+  --text-heading-lg: 44px;
+  --leading-heading-lg: 1.12;
+  --tracking-heading-lg: -1.1px;
+
+  --text-display: 64px;
+  --leading-display: 1;
+  --tracking-display: -2.88px;
+
+  /* Spacing Scale */
+  --spacing-4: 4px;
+  --spacing-8: 8px;
+  --spacing-12: 12px;
+  --spacing-16: 16px;
+  --spacing-20: 20px;
+  --spacing-24: 24px;
+  --spacing-32: 32px;
+  --spacing-40: 40px;
+  --spacing-56: 56px;
+  --spacing-80: 80px;
+  --spacing-96: 96px;
+
+  /* Radii */
+  --radius-sm: 3px;
+  --radius-cards: 10px;
+  --radius-panels: 20px;
+
+  /* Layout */
+  --page-max-width: 1440px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background-color: var(--color-obsidian-canvas);
+  color: var(--color-bone);
+  font-family: var(--font-geist);
+  font-weight: 400;
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Custom terminal scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-obsidian-canvas);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-ash-stroke);
+  border-radius: var(--radius-sm);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-graphite-mid);
+}
+
+/* ==========================================================================
+   Base Factory Components
+   ========================================================================== */
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-geist);
+  font-size: 13px;
+  font-weight: 400;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background-color: var(--color-carbon-lift);
+  color: var(--color-bone);
+  border: 1px solid var(--color-ash-stroke);
+}
+.btn-primary:hover {
+  background-color: #272321;
+  border-color: var(--color-warm-granite);
+}
+
+.btn-light {
+  background-color: var(--color-chalk);
+  color: var(--color-obsidian-canvas);
+  border: 1px solid var(--color-chalk);
+  font-weight: 500;
+}
+.btn-light:hover {
+  background-color: #e5e5e5;
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: var(--color-bone);
+  border: 1px solid var(--color-ash-stroke);
+}
+.btn-ghost:hover {
+  border-color: var(--color-bone);
+  color: #ffffff;
+}
+
+.btn-danger {
+  background-color: transparent;
+  color: var(--color-signal-orange);
+  border: 1px solid rgba(238, 96, 24, 0.4);
+}
+.btn-danger:hover {
+  background-color: rgba(238, 96, 24, 0.1);
+  border-color: var(--color-signal-orange);
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+/* Status Pulse Indicator */
+.status-pulse {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--color-signal-orange);
+  position: relative;
+}
+.status-pulse.active::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--color-signal-orange);
+  animation: pulse-ring 2s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+.status-pulse.green {
+  background-color: var(--color-metric-green);
+}
+.status-pulse.green::after {
+  border-color: var(--color-metric-green);
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.9; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* Typography Helpers */
+.font-mono-tag {
+  font-family: var(--font-geist-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: -0.2px;
+  color: var(--color-warm-granite);
+}
+
+.text-muted {
+  color: var(--color-warm-granite);
+}
+
+.text-orange {
+  color: var(--color-signal-orange);
+}
+
+.text-green {
+  color: var(--color-metric-green);
+}
+
+/* Light Surface Card: Signature Figure/Ground Move */
+.card-light-figure {
+  background-color: var(--color-bone);
+  color: #101010;
+  border-radius: var(--radius-cards);
+  padding: var(--spacing-24);
+  position: relative;
+}
+.card-light-figure h3, .card-light-figure h2 {
+  color: #101010;
+}
+.card-light-figure p {
+  color: #3d3a39;
+}
+
+/* Dark Card with Hairline Stroke */
+.card-dark {
+  background-color: var(--color-carbon-lift);
+  border: 1px solid var(--color-ash-stroke);
+  border-radius: var(--radius-cards);
+  padding: var(--spacing-20);
+}
+
+/* ==========================================================================
+   Header & Nav
+   ========================================================================== */
+
+.top-navbar {
+  height: 64px;
+  border-bottom: 1px solid var(--color-ash-stroke);
+  background-color: rgba(16, 16, 16, 0.95);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--spacing-32);
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-wordmark {
+  font-family: var(--font-geist-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  color: var(--color-bone);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-wordmark .subtext {
+  color: var(--color-warm-granite);
+  font-weight: 400;
+}
+
+.nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.case-selector {
+  background-color: var(--color-carbon-lift);
+  border: 1px solid var(--color-ash-stroke);
+  color: var(--color-bone);
+  font-family: var(--font-geist);
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  outline: none;
+  cursor: pointer;
+  max-width: 320px;
+}
+.case-selector:focus {
+  border-color: var(--color-bone);
+}
+
+/* ==========================================================================
+   Dashboard Frame (macOS Terminal war room window)
+   ========================================================================== */
+
+.dashboard-window {
+  margin: var(--spacing-24) auto;
+  max-width: var(--page-max-width);
+  padding: 0 var(--spacing-24);
+}
+
+.window-chrome {
+  background-color: #0d0d0d;
+  border: 1px solid var(--color-ash-stroke);
+  border-radius: var(--radius-cards);
+  overflow: hidden;
+}
+
+.window-header {
+  background-color: #171514;
+  border-bottom: 1px solid var(--color-ash-stroke);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.traffic-dots {
+  display: flex;
+  gap: 6px;
+}
+.traffic-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.traffic-dot.red { background-color: #ff5f56; }
+.traffic-dot.yellow { background-color: #ffbd2e; }
+.traffic-dot.green { background-color: #27c93f; }
+
+.window-title {
+  font-family: var(--font-geist-mono);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--color-pale-stone);
+}
+
+/* Metric Tiles Grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background-color: #0d0d0d;
+  border-bottom: 1px solid var(--color-ash-stroke);
+}
+
+.metric-tile {
+  padding: var(--spacing-20) var(--spacing-24);
+  border-right: 1px solid var(--color-ash-stroke);
+  position: relative;
+}
+.metric-tile:last-child {
+  border-right: none;
+}
+
+.metric-label {
+  font-family: var(--font-geist-mono);
+  font-size: 11px;
+  color: var(--color-pale-stone);
+  text-transform: uppercase;
+  letter-spacing: -0.2px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.metric-value {
+  font-size: 32px;
+  font-weight: 400;
+  letter-spacing: -1px;
+  color: var(--color-bone);
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+
+.metric-sub {
+  font-family: var(--font-geist-mono);
+  font-size: 11px;
+  color: var(--color-warm-granite);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ==========================================================================
+   Navigation Tabs
+   ========================================================================== */
+
+.tabs-bar {
+  display: flex;
+  background-color: var(--color-obsidian-canvas);
+  border-bottom: 1px solid var(--color-ash-stroke);
+  padding: 0 var(--spacing-16);
+  gap: 8px;
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-warm-granite);
+  font-family: var(--font-geist-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 14px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+.tab-btn:hover {
+  color: var(--color-bone);
+}
+.tab-btn.active {
+  color: var(--color-bone);
+  border-bottom-color: var(--color-bone);
+}
+.tab-btn .badge {
+  background-color: var(--color-carbon-lift);
+  border: 1px solid var(--color-ash-stroke);
+  color: var(--color-pale-stone);
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+/* ==========================================================================
+   Graph Workspace (Cytoscape Canvas + Tooling)
+   ========================================================================== */
+
+.graph-workspace {
+  display: flex;
+  height: 680px;
+  position: relative;
+  background-color: #0a0a0a;
+}
+
+.graph-viewport {
+  flex: 1;
+  position: relative;
+  height: 100%;
+}
+
+#cy-container {
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(circle, rgba(61, 58, 57, 0.25) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.graph-toolbar {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: rgba(29, 26, 24, 0.9);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--color-ash-stroke);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+}
+
+.graph-filter-bar {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: rgba(29, 26, 24, 0.9);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--color-ash-stroke);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+}
+
+.filter-chip {
+  font-family: var(--font-geist-mono);
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-ash-stroke);
+  background-color: transparent;
+  color: var(--color-pale-stone);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.filter-chip.active {
+  background-color: var(--color-bone);
+  color: #101010;
+  border-color: var(--color-bone);
+}
+
+/* Path Finding Bar */
+.path-finder-panel {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  background-color: rgba(29, 26, 24, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--color-ash-stroke);
+  border-radius: var(--radius-cards);
+  padding: 14px 18px;
+  width: 320px;
+}
+
+/* Side Drawer (Entity / Edge Inspector) */
+.graph-inspector {
+  width: 340px;
+  background-color: #141211;
+  border-left: 1px solid var(--color-ash-stroke);
+  overflow-y: auto;
+  padding: var(--spacing-20);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Legend */
+.graph-legend {
+  display: flex;
+  gap: 12px;
+  padding: 8px 16px;
+  background-color: #101010;
+  border-top: 1px solid var(--color-ash-stroke);
+  font-family: var(--font-geist-mono);
+  font-size: 11px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-pale-stone);
+}
+.legend-color {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+/* ==========================================================================
+   Data Tables (Transactions, Evidence, Alerts)
+   ========================================================================== */
+
+.table-container {
+  overflow-x: auto;
+}
+
+.factory-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.factory-table th {
+  font-family: var(--font-geist-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--color-warm-granite);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-ash-stroke);
+  background-color: #141211;
+  font-weight: 400;
+  letter-spacing: -0.2px;
+}
+
+.factory-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(61, 58, 57, 0.4);
+  color: var(--color-bone);
+  font-family: var(--font-geist);
+}
+
+.factory-table tr:hover td {
+  background-color: rgba(29, 26, 24, 0.6);
+}
+
+.badge-tag {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-geist-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.badge-critical {
+  background-color: rgba(238, 96, 24, 0.2);
+  color: var(--color-signal-orange);
+  border: 1px solid var(--color-signal-orange);
+}
+.badge-high {
+  background-color: rgba(238, 96, 24, 0.1);
+  color: #ffa366;
+  border: 1px solid rgba(238, 96, 24, 0.5);
+}
+.badge-medium {
+  background-color: rgba(160, 202, 146, 0.15);
+  color: var(--color-metric-green);
+  border: 1px solid var(--color-metric-green);
+}
+
+/* Modals */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-24);
+}
+
+.modal-content {
+  background-color: var(--color-carbon-lift);
+  border: 1px solid var(--color-ash-stroke);
+  border-radius: var(--radius-cards);
+  width: 100%;
+  max-width: 540px;
+  padding: var(--spacing-24);
+}
+
+/* Form Controls */
+.form-group {
+  margin-bottom: 16px;
+}
+.form-label {
+  display: block;
+  font-family: var(--font-geist-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--color-pale-stone);
+  margin-bottom: 6px;
+}
+.form-input, .form-textarea {
+  width: 100%;
+  background-color: #101010;
+  border: 1px solid var(--color-ash-stroke);
+  color: var(--color-bone);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-geist);
+  font-size: 13px;
+  outline: none;
+}
+.form-input:focus, .form-textarea:focus {
+  border-color: var(--color-bone);
+}
